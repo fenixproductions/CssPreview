@@ -20,7 +20,7 @@ namespace CssPreviewClass {
 			this.MediaQuery = med;
 		}
 		public string Selector { get; set; }
-		public string MediaQuery { get; set; }
+		public string MediaQuery { get; set; }		
 	}
 	
 	/// <summary>
@@ -31,6 +31,27 @@ namespace CssPreviewClass {
 			HolderItems = new List<CssHolderItem>();			
 		}
 				
-		public List<CssHolderItem> HolderItems { get; set; }		
+		public List<CssHolderItem> HolderItems { get; set; }
+
+		public Boolean HasItem(string sel, string med) {
+			foreach (CssHolderItem chi in this.HolderItems) {
+				if ((med != null) && (chi.MediaQuery != null)) {
+					if (chi.Selector.Equals(sel) && chi.MediaQuery.Equals(med)) {
+						return true;
+					}
+				} else {
+					if (chi.Selector.Equals(sel)) {
+						return true;
+					}
+				}				
+			}
+
+			return false;
+		}
+
+		public void SortIt() {
+			this.HolderItems = this.HolderItems.OrderBy(s => s.MediaQuery).ThenBy(s => s.Selector).ToList();
+		}		
 	}
+
 }
