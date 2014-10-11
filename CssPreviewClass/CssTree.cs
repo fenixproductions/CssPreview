@@ -94,7 +94,7 @@ namespace CssPreviewClass {
 		public T Data { get; set; }
 		public TreeNode<T> Parent { get; set; }
 		public ICollection<TreeNode<T>> Children { get; set; }
-
+				
 		public Boolean IsRoot {
 			get { return Parent == null; }
 		}

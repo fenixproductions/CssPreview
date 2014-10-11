@@ -13,8 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace CssPreviewClass
-{
+namespace CssPreviewClass {
 	/// <summary>
 	/// Class to hold information for a single CSS declaration.
 	/// </summary>
@@ -85,6 +84,10 @@ namespace CssPreviewClass
 
 						continue;
 					} else if (atRule == "@font-face") {
+						MoveTo("}");
+						MoveAhead();
+						continue;
+					} else if (atRule == "@viewport") {
 						MoveTo("}");
 						MoveAhead();
 						continue;
