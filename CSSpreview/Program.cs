@@ -12,23 +12,7 @@ namespace CSSpreview
 {
 	class Program
 	{
-		static void CleanUpCss(ref StringBuilder sb) {
-			if (sb.Length > 0) {
-				sb = sb.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");				
-				//remove comments
-				string mypat =@"/\*((?!\*/).)*\*/";
-				string tmpstr = Regex.Replace(sb.ToString(), mypat, "", RegexOptions.Singleline);
-								
-				//remove charset and import
-				mypat = "@(charset|import) .+?;";
-				tmpstr = Regex.Replace(tmpstr, mypat, "", RegexOptions.Singleline);
-				//remove viewport
-				mypat = @"@viewport\s?{.+?}";
-				tmpstr = Regex.Replace(tmpstr, mypat, "", RegexOptions.Singleline);
-				sb.Clear();
-				sb.Append(tmpstr);
-			}
-		}
+		
 
 		private static String CreateIndent(int depth) {
 			StringBuilder sb = new StringBuilder();
@@ -39,7 +23,7 @@ namespace CSSpreview
 		}
 
 		private static void CreateTreeNodes(string[] tmpsels, string tmpmed, ref TreeNode<CssTreeItem> tn) {
-			string tmpt = GetTag(tmpsels[0]);
+			string tmpt = HtmlAddons.GetTag(tmpsels[0]);
 			string tmps = tmpsels[0];
 			if (String.IsNullOrEmpty(tmpt)) {
 				tmpt = "|";
@@ -59,7 +43,7 @@ namespace CSSpreview
 				tmpiter = tmpiter + ">" + tmpsels[i];
 				TreeNode<CssTreeItem> myfind3 = myfind2.FindTreeNode(node => node.Data != null && node.Data.FullSelector.Equals(tmpiter));
 				tmps = tmpsels[i];
-				tmpt = GetTag(tmpsels[i]);
+				tmpt = HtmlAddons.GetTag(tmpsels[i]);
 				
 				if (String.IsNullOrEmpty(tmpt)) {
 					tmpt = "|";
@@ -71,149 +55,73 @@ namespace CSSpreview
 				}			
 			}			
 		}
-
-		private static string GetTag(string str) {
-			string tmptag = Regex.Replace(str, @"(\.[^.]+?)+$", "", RegexOptions.Multiline);
-			tmptag = Regex.Replace(tmptag, @"(#[^#]+?)+$", "", RegexOptions.Multiline);
-
-			if (!String.IsNullOrEmpty(tmptag)) {
-				return tmptag;
-			}
-
-			return "";
-		}
-		private static string GetClass(string str) {
-			string tmpclass = Regex.Replace(str, @"([^.]*?)([.].*)?$", "$2", RegexOptions.Multiline);
-			if (!String.IsNullOrEmpty(tmpclass)) {
-				return String.Join(" ", tmpclass.Split('.')).ToString().Trim();
-			}
-			return "";
-		}
-		private static string GetId(string str) {
-			string tmpid = Regex.Replace(str, @"([^#]*?)([#].*)?$", "$2", RegexOptions.Multiline);
-			if (!String.IsNullOrEmpty(tmpid)) {
-				return String.Join(" ", tmpid.Split('#')).ToString().Trim();
-			}
-			return "";
-		}
-		
-
+				
 		private static void FixTreeNodes(ref TreeNode<CssTreeItem> tn) {			
 			foreach (TreeNode<CssTreeItem> node in tn) {
 				if (node.Parent != null) {
 					node.Data.FullSelector = node.Parent.Data.FullSelector + ">" + node.Data.Selector;
-										
-					node.Data.Tag = GetTag(node.Data.Selector);
-					node.Data.TagClass = GetClass(node.Data.Selector);
-					node.Data.TagId = GetId(node.Data.Selector);
 
-					//if (node.Data.Tag.Equals("li")) {
-					//	if (!node.Parent.Data.Tag.Equals("html")) {							
-					//		node.Parent.Data.Tag = "ul";
-					//	}						
-					//}										
+					node.Data.Tag = HtmlAddons.GetTag(node.Data.Selector);
+					node.Data.TagClass = HtmlAddons.GetClass(node.Data.Selector);
+					node.Data.TagId = HtmlAddons.GetId(node.Data.Selector);									
 				}
 			}
 
 			foreach (TreeNode<CssTreeItem> node in tn) {
 				if (node.Parent != null) {
-					if (node.Data.Tag.Equals("|") || node.Data.FullSelector.Contains("|")) {
+					if (node.Data.Tag.Equals("|")) {
 						node.Data.Tag = "div";
-						node.Data.FullSelector = node.Data.FullSelector.Replace("|", "div");						
+						node.Data.FullSelector = node.Data.FullSelector.Replace("|", "div");
+						node.Data.Selector = node.Data.Selector.Replace("|", "");
+					}
+					if (node.Data.FullSelector.Contains("|")) {						
+						node.Data.FullSelector = node.Data.FullSelector.Replace("|", "div");
+						node.Data.Selector = node.Data.Selector.Replace("|", "");
 					}
 				}
 			}
 
 		}
-
-		private static string SplitSelectors(string mybase, string tmp) {			
-			//get first plus sign
-			int plusind = tmp.IndexOf('+');
-			//get substring
-			string str1 = tmp.Substring(0, plusind);
-			string str2 = tmp.Substring(plusind + 1);
-			//get base
-			string strbase = str1.Substring(0, str1.LastIndexOf('>') + 1);
-			str1 = str1.Substring(str1.LastIndexOf('>') + 1);
-			
-			if (!String.IsNullOrEmpty(mybase)) {
-				strbase = mybase + ">" + strbase;
-			}
-			string str1out = strbase + str1;
-			string str2out = strbase + str2;
-			string strout = str1out;
-
-			if (str2.Contains('+')) {
-				strout = strout + @"\" + SplitSelectors(strbase, str2);
-			} else {
-				strout = strout + @"\" + str2out;
-			}
-			strout = strout.Replace(">>", ">");
-
-			return strout;
-		}
-
-		private static string GiveStartElem(TreeNode<CssTreeItem> cti) {
-			string tmpstr = "<" + cti.Data.Tag;
-			
-			if (!String.IsNullOrEmpty(cti.Data.TagId)) {
-					tmpstr = tmpstr + " id=\"" + cti.Data.TagId + "\"";
-			}
-			
-			if (!String.IsNullOrEmpty(cti.Data.TagClass)) {
-				tmpstr = tmpstr + " class=\"" + cti.Data.TagClass + "\"";
-			}
-			
-			tmpstr = tmpstr + ">";
-
-			return tmpstr;
-		}
-
-		private static string GiveEndElem(TreeNode<CssTreeItem> cti) {			
-			return "</" + cti.Data.Tag + ">";
-		}
-
-		private static string CrawlTree(string fselector, int lev, TreeNode<CssTreeItem> tn) {
+				
+		private static string CrawlTree(string fselector, int lev, TreeNode<CssTreeItem> tn, Options options) {
 			TreeNode<CssTreeItem> tmpnode = tn.FindTreeNode(node => node.Data != null && node.Data.FullSelector.Equals(fselector));
 			string fsel = "";
 			string txt = "";
-
+			
 			lev = lev + 1;
 			foreach (TreeNode<CssTreeItem> mynode in tmpnode) {				
 				if (mynode.Level == lev) {
 					fsel = mynode.Data.FullSelector;
-					
+					//txt = txt + "<hr class=\"clear-csspreview\">";
 					if (mynode.IsLeaf) {
-						txt = txt + CreateIndent(mynode.Level) + GiveStartElem(mynode) + "Lorem Ipsum" + GiveEndElem(mynode) + "\r\n";
+						txt = txt + CreateIndent(mynode.Level) + HtmlAddons.GiveStartElem(mynode.Data.Tag, mynode.Data.TagId, mynode.Data.TagClass) + HtmlAddons.GiveTagContent(mynode.Data.Tag, options.InnerText, mynode.Data.Selector) + HtmlAddons.GiveEndElem(mynode.Data.Tag) + "\r\n";
 					} else {
-						txt = txt + CreateIndent(mynode.Level) + GiveStartElem(mynode) + "\r\n";
-						txt = txt + CrawlTree(fsel, lev, tmpnode);
-						txt = txt + CreateIndent(mynode.Level) + GiveEndElem(mynode) + "\r\n";
+						txt = txt + CreateIndent(mynode.Level) + HtmlAddons.GiveStartElem(mynode.Data.Tag, mynode.Data.TagId, mynode.Data.TagClass) + "\r\n";
+						txt = txt + CrawlTree(fsel, lev, tmpnode, options);
+						txt = txt + CreateIndent(mynode.Level) + HtmlAddons.GiveEndElem(mynode.Data.Tag) + "\r\n";
 					}
 				}
 			}			
 			return txt;
 		}
 		
-		static void Main(string[] args) {			
-			StringBuilder sb = new StringBuilder();
-			String tmpcss = "";
-			String fullfilename = @"d:\code\csharp\Projects\_sample-files_\style.css";
-			String filename = fullfilename.Substring(fullfilename.LastIndexOf(@"\") + 1);
-
+		static void Main(string[] args) {
+			Options options = new Options(@"d:\code\csharp\Projects\_sample-files_\connect.css");
+			
+			String tmpcss = "";			
+			
 			try {
-				tmpcss = File.ReadAllText(fullfilename);
+				tmpcss = File.ReadAllText(options.CssFileNameFull);
 
 			} catch (FileNotFoundException e) {
 				Console.WriteLine(e.Message);
 			}
 			
-			if (!String.IsNullOrEmpty(tmpcss)) {
-				sb.Append(tmpcss);
-				CleanUpCss(ref sb);
+			if (!String.IsNullOrEmpty(tmpcss)) {				
+				HtmlAddons.CleanUpCss(ref tmpcss);
 
 				CssParser cp = new CssParser();
-				IEnumerable<CssParserRule> rules = cp.ParseAll(sb.ToString());
+				IEnumerable<CssParserRule> rules = cp.ParseAll(tmpcss);
 				CssHolder ch = new CssHolder();
 
 				foreach (CssParserRule rule in rules) {			
@@ -244,7 +152,7 @@ namespace CSSpreview
 					string[] tmpsels;
 
 					if (tmpsel.Contains('+')) {						
-						string[] splits = SplitSelectors("", tmpsel).Split('\\');
+						string[] splits = HtmlAddons.SplitSelectors("", tmpsel).Split('\\');
 
 						foreach (string sp in splits) {
 							tmpsels = sp.Split('>');
@@ -260,13 +168,22 @@ namespace CSSpreview
 				FixTreeNodes(ref tn);
 				Console.WriteLine("-----------------------");
 
-				string tmpstr = "<html>\r\n<head>\r\n<link rel=\"stylesheet\" href=\"" + filename + "\">\r\n</head>\r\n" + CrawlTree("html", 0, tn) + "\r\n</html>";
+				string tmpstr = "<html>\r\n<head>\r\n<link rel=\"stylesheet\" href=\"" + options.CssFileName + "\">\r\n";
+				//tmpstr = tmpstr + "<style type=\"text/css\">" + ".clear-csspreview:before,.clear-csspreview:after { content:\"\"; display:table; } .clear-csspreview:after { clear:both;} .clear-csspreview {margin:20px 0;  zoom:1;}"+ "</style>";
+				//tmpstr = tmpstr + "<style type=\"text/css\">" + "div:before,div:after { content:\"\"; display:table; } div:after { clear:both;} div { zoom:1;}"+ "</style>";
 
-				File.WriteAllText(@"d:\code\csharp\Projects\_sample-files_\xxx.html", tmpstr, Encoding.UTF8);
-				//Console.WriteLine(tmpstr);				
+				tmpstr = tmpstr + "</head>\r\n" + CrawlTree("html", 0, tn, options) + "\r\n</html>";
+				try {
+					File.WriteAllText(options.CssFolderName + options.HtmlFileName, tmpstr, Encoding.UTF8);
+
+				} catch (Exception e) {
+					Console.WriteLine(e.Message);
+				}
+				
+				Console.WriteLine(tmpstr);				
 
 			}
-			//Console.ReadKey();
+			Console.ReadKey();
 		}		
 	}
 }

@@ -33,6 +33,12 @@ namespace CssPreviewClass {
 				
 		public List<CssHolderItem> HolderItems { get; set; }
 
+		/// <summary>
+		/// checks item existence
+		/// </summary>
+		/// <param name="sel">item's selector</param>
+		/// <param name="med">item's media query</param>
+		/// <returns>if item exists</returns>
 		public Boolean HasItem(string sel, string med) {
 			foreach (CssHolderItem chi in this.HolderItems) {
 				if ((med != null) && (chi.MediaQuery != null)) {
@@ -49,6 +55,9 @@ namespace CssPreviewClass {
 			return false;
 		}
 
+		/// <summary>
+		/// Sorts CSS selectors
+		/// </summary>
 		public void SortIt() {
 			this.HolderItems = this.HolderItems.OrderBy(s => s.MediaQuery).ThenBy(s => s.Selector).ToList();
 		}		

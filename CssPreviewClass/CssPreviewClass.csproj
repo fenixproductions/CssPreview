@@ -42,6 +42,8 @@
     <Compile Include="CssHolder.cs" />
     <Compile Include="CssParser.cs" />
     <Compile Include="CssTree.cs" />
+    <Compile Include="HtmlAddons.cs" />
+    <Compile Include="Options.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextParser.cs" />
   </ItemGroup>
